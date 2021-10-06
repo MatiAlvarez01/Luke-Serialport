@@ -1,6 +1,8 @@
 const express = require("express");
 const socketIo = require("socket.io");
 const SerialPort = require("serialport");
+const cors = require("cors");
+const bodyParser = require("body-parser");
 const ReadLine = SerialPort.parsers.Readline;
 const parser = new ReadLine();
 const MockBinding = require("@serialport/binding-mock")
@@ -8,42 +10,64 @@ const index = require("./routes/index");
 const PORT = process.env.PORT || 4001;
 
 const app = express();
+app.use(bodyParser.json());
+app.use(express.urlencoded({ extended: true}));
+app.use(express.json());
 app.use(index);
+app.use(cors({
+  origin: "http://localhost:3000"
+}))
 const server = app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
 const io = socketIo(server);
 
-//let port;
+let port;
 //const port = new SerialPort("", { baudRate: 9600 });
-const port = new SerialPort("COM1", { baudRate: 9600 })
-port.on("open", () => {
-  console.log("Serial port opened");
-  return res.status(200).send("Puerto serial abierto");
-});
-port.on("err", (err) => {
-  console.log("Serial port error: ", err.message);
-  return res.status(500).send("Serial por Error. Ver consola backend.");
-})
-// app.post("/newPort", (req, res, next) => {
-//   const { portSelected, baudRate } = req.body;
-//   port = new SerialPort(portSelected, {
-//     baudRate: baudRate
-//   });
-//   if (port) {
-//     port.on("open", () => {
-//       console.log("Serial port opened");
-//       return res.status(200).send("Puerto serial abierto");
-//     });
-//     port.on("err", (err) => {
-//       console.log("Serial port error: ", err.message);
-//       return res.status(500).send("Serial por Error. Ver consola backend.");
-//     })
-//   };
+//const port = new SerialPort("COM1", { baudRate: 9600 })
+//const port2 = new SerialPort("COM2", { baudRate: 9600 })
+// port.on("open", () => {
+//   console.log("Serial port 1 opened");
+// });
+// port.on("err", (err) => {
+//   console.log("Serial port 1 error: ", err.message);
 // })
-
+// port2.on("open", () => {
+//   console.log("Serial port 2 opened");
+// });
+// port2.on("err", (err) => {
+//   console.log("Serial port 2 error: ", err.message);
+// })
 app.get("/portList", async (req, res, next) => {
   const list = await SerialPort.list();
-  console.log("Listas de port: ", list)
   return res.status(200).send(list)
+})
+
+app.post("/newPort", (req, res, next) => {
+  const { portSelected, baudRate } = req.body;
+  port = new SerialPort(portSelected, {
+    baudRate: 9600
+  });
+  if (port) {
+    port.on("open", () => {
+      console.log("Serial port opened");
+      return res.status(200).send("Puerto serial abierto");
+    });
+    port.on("err", (err) => {
+      console.log("Serial port error: ", err.message);
+      return res.status(500).send("Serial por Error. Ver consola backend.");
+    })
+  };
+})
+
+app.get("/closePort", async (req, res, next) => {
+  port.close((err) => {
+    if (err) {
+      console.log("ERROR CLOSE PORT: ", err)
+      return res.status(500).send("Error. Ver consola backend")
+    } else {
+      console.log("Port closed")
+      return res.status(200).send("Port closed")
+    }
+  })
 })
 
 io.on("connection", (socket) => {
@@ -65,4 +89,14 @@ io.on("connection", (socket) => {
       io.emit("COM:messageToFront", data.toString());
     });
   };
+  //------------------//
+  // port2.on("data", (messageRec) => {
+  //   console.log("sabes que si: ", messageRec.toString())
+  //   port2.write("Mensaje del port2")
+  //   io.emit("COM:messageToFront", messageRec.toString());
+  // })
+  // port.on("data", (mensajePort2) => {
+  //   console.log(mensajePort2.toString())
+  //   io.emit("COM:messageToFront", mensajePort2.toString());
+  // })
 });

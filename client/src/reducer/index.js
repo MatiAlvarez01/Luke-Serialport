@@ -1,10 +1,12 @@
 import {
     NEW_CONSOLE_MESSAGE,
-    GET_LIST_PORTS
+    GET_LIST_PORTS,
+    SELECT_PORT
 } from "../action/constants";
 var initialState = {
     messagesConsole: [],
-    listPorts: []
+    listPorts: [],
+    portSelected: {}
 }
 
 function reducer(state = initialState, action) {
@@ -18,6 +20,11 @@ function reducer(state = initialState, action) {
             return {
                 ...state,
                 listPorts: action.payload
+            }
+        case SELECT_PORT:
+            return {
+                ...state,
+                portSelected: action.payload
             }
         default:
             return {
