@@ -1,0 +1,2 @@
+export const NEW_CONSOLE_MESSAGE = "NEW_CONSOLE_MESSAGE";
+export const GET_LIST_PORTS = "GET_LIST_PORTS";
